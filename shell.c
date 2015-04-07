@@ -41,12 +41,12 @@ int main(int argc, char* argv[]) {
 
   while (1) {
     if ((linha = readline("my_prompt$ ")) == NULL)
-      exit(0);
+      exit(0);    
     if (strlen(linha) != 0) {
       add_history(linha);
       com = parse(linha);
       if (com) {
-	print_parse(com);
+	//print_parse(com);
 	execute_commands(com);
 	free_commlist(com);
       }
@@ -104,6 +104,15 @@ void execute_commands(COMMAND *commlist) {
       dup2(fd, STDIN_FILENO);
       close(fd);
     }
+    
+    int fdout;
+    if(outputfile != NULL) {
+      int fdout;
+      fdout = open(outputfile, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
+      dup2(fdout, STDOUT_FILENO);
+      close(fdout);
+    }
+    
     execvp(commlist->cmd, commlist->argv);
   }
   
