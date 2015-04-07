@@ -98,6 +98,12 @@ void execute_commands(COMMAND *commlist) {
   
   else if(pid == 0) {
     //child code after fork
+    if(inputfile != NULL) {
+      int fd;
+      fd = open(inputfile, O_RDONLY);
+      dup2(fd, STDIN_FILENO);
+      close(fd);
+    }
     execvp(commlist->cmd, commlist->argv);
   }
   
