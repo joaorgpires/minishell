@@ -77,14 +77,33 @@ void print_parse(COMMAND* commlist) {
 }
 
 void free_commlist(COMMAND *commlist){
-    // ...
-    // Esta função deverá libertar a memória alocada para a lista ligada.
-    // ...
+  // ...
+  // Esta função deverá libertar a memória alocada para a lista ligada.
+  // ...
+  if(commlist == NULL) return;
+  free_commlist(commlist->next);
+  free(commlist);
 }
 
 void execute_commands(COMMAND *commlist) {
-    // ...
-    // Esta função deverá "executar" a "pipeline" de comandos da lista commlist.
-    // ...
+  // ...
+  // Esta função deverá "executar" a "pipeline" de comandos da lista commlist.
+  // ...
+    pid_t pid;
+  
+  //before fork
+  if((pid = fork()) < 0) {
+    //fork failed
+  }
+  
+  else if(pid == 0) {
+    //child code after fork
+    execvp(commlist->cmd, commlist->argv);
+  }
+  
+  else {
+    //parent code after fork
+    wait(0);
+  }
 } 
 
