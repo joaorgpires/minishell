@@ -89,36 +89,57 @@ void execute_commands(COMMAND *commlist) {
   // ...
   // Esta função deverá "executar" a "pipeline" de comandos da lista commlist.
   // ...
-    pid_t pid;
+  pid_t pid;
+  int fd[2];
   
-  //before fork
+  if(commlist->next != NULL) {
+    if(pipe(fd) < 0) {
+      //Pipe error!
+    }
+  }
+  
+  //before fork  
   if((pid = fork()) < 0) {
     //fork failed
   }
   
   else if(pid == 0) {
     //child code after fork
+    int fdin, fdout;
+    
     if(inputfile != NULL) {
-      int fd;
-      fd = open(inputfile, O_RDONLY);
-      dup2(fd, STDIN_FILENO);
-      close(fd);
+      fdin = open(inputfile, O_RDONLY);
+      dup2(fdin, STDIN_FILENO);
+      close(fdin);
     }
     
-    int fdout;
     if(outputfile != NULL) {
-      int fdout;
       fdout = open(outputfile, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
       dup2(fdout, STDOUT_FILENO);
       close(fdout);
     }
     
-    execvp(commlist->cmd, commlist->argv);
+    if(commlist->next != NULL) {//CONFIRMAR <----------------------------------------
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+    }
+    
+    if(fdin == -1 || fdout == -1)
+      perror("Error");  
+    else
+      execvp(commlist->cmd, commlist->argv);
   }
   
   else {
     //parent code after fork
-    wait(0);
+
+    if(commlist->next != NULL) { //CONFIRMAR <---------------------------------------
+      close(fd[1]);
+      dup2(fd[0], STDIN_FILENO);
+    }
+    
+    if(!background_exec) //CHECK <----------------------------------------------------
+      wait(0);
   }
 } 
 
