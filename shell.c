@@ -92,38 +92,79 @@ void execute_commands(COMMAND *commlist) {
   if(strcmp("exit", commlist->cmd) == 0)
     exit(0);
   pid_t pid;
-    
-  //before fork  
-  if((pid = fork()) < 0) {
-    //fork failed
-  }
   
-  else if(pid == 0) {
-    //child code after fork
-    int fdin, fdout;
+  int npipes = 0;
+  COMMAND* ptr = commlist;
+  
+  while(waitpid(NULL, NULL, WNOHANG) == 1);
+  
+  while(ptr != NULL) {
+    ptr = ptr->next;
+    npipes++;
+  }
+  npipes--;
+  
+  int fd[npipes][2];
+  int i;
+  
+  i = 0;
+  while(commlist != NULL) {
+    //before fork  
+    if(i < npipes)
+      if(pipe(fd[i]) == -1) {
+	perror("Error: pipe failed.\n");
+	exit(1);
+      }
     
-    if(inputfile != NULL) {
-      fdin = open(inputfile, O_RDONLY);
-      dup2(fdin, STDIN_FILENO);
-      close(fdin);
+    if((pid = fork()) < 0) {
+      //fork failed
+      perror("Error: fork failed.\n");
+      exit(1);
     }
+  
+    else if(pid == 0) {
+      //child code after fork
+      if(inputfile != NULL && i == 0) {
+	int fdin = open(inputfile, O_RDONLY);       
+	if(fdin == -1) {
+	  perror("Error: file could not be created.\n");  
+	  exit(1);
+	}
+	dup2(fdin, STDIN_FILENO);
+	close(fdin);
+      }
     
-    if(outputfile != NULL) {
-      fdout = open(outputfile, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
-      dup2(fdout, STDOUT_FILENO);
-      close(fdout);
-    }
-        
-    if(fdin == -1 || fdout == -1)
-      perror("Error");  
-    else
+      if(outputfile != NULL && i == npipes) {
+	int fdout = open(outputfile, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR);
+	if(fdout == -1) {      
+	  perror("Error: file could not be opened or does not exist.\n");
+	  exit(1);
+	}
+	dup2(fdout, STDOUT_FILENO);
+	close(fdout);
+      }
+            
+      if (i > 0) {
+	dup2(fd[i-1][0], STDIN_FILENO); //receber input a partir da pipe anterior
+	close(fd[i - 1][0]);
+      }
+      if (i < npipes) {
+	dup2(fd[i][1], STDOUT_FILENO); //enviar output para a proxima pipe
+      }
+      
       execvp(commlist->cmd, commlist->argv);
-  }
+    }
   
-  else {
-    //parent code after fork
-    if(!background_exec)
-      wait(NULL);
+    else {
+      //parent code after fork
+      if(!background_exec)
+	wait(NULL);
+      if(i < npipes)
+	close(fd[i][1]);
+    }
+    
+    commlist = commlist->next;
+    i++;
   }
 } 
 
