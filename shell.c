@@ -122,9 +122,8 @@ void execute_commands(COMMAND *commlist) {
   
   else {
     //parent code after fork
-    
     if(!background_exec)
-      wait(0);
+      wait(NULL);
   }
 } 
 
