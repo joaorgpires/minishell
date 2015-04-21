@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   COMMAND *com;
 
   while (1) {
-    if ((linha = readline("my_prompt$ ")) == NULL)
+    if ((linha = readline("shell_sensual$ ")) == NULL)
       exit(0);    
     if (strlen(linha) != 0) {
       add_history(linha);
@@ -89,15 +89,10 @@ void execute_commands(COMMAND *commlist) {
   // ...
   // Esta função deverá "executar" a "pipeline" de comandos da lista commlist.
   // ...
+  if(strcmp("exit", commlist->cmd) == 0)
+    exit(0);
   pid_t pid;
-  int fd[2];
-  
-  if(commlist->next != NULL) {
-    if(pipe(fd) < 0) {
-      //Pipe error!
-    }
-  }
-  
+    
   //before fork  
   if((pid = fork()) < 0) {
     //fork failed
@@ -118,12 +113,7 @@ void execute_commands(COMMAND *commlist) {
       dup2(fdout, STDOUT_FILENO);
       close(fdout);
     }
-    
-    if(commlist->next != NULL) {//CONFIRMAR <----------------------------------------
-      close(fd[0]);
-      dup2(fd[1], STDOUT_FILENO);
-    }
-    
+        
     if(fdin == -1 || fdout == -1)
       perror("Error");  
     else
@@ -132,13 +122,8 @@ void execute_commands(COMMAND *commlist) {
   
   else {
     //parent code after fork
-
-    if(commlist->next != NULL) { //CONFIRMAR <---------------------------------------
-      close(fd[1]);
-      dup2(fd[0], STDIN_FILENO);
-    }
     
-    if(!background_exec) //CHECK <----------------------------------------------------
+    if(!background_exec)
       wait(0);
   }
 } 
