@@ -93,10 +93,10 @@ void execute_commands(COMMAND *commlist) {
     exit(0);
   pid_t pid;
   
-  int npipes = 0;
+  int npipes = 0, status;
   COMMAND* ptr = commlist;
   
-  while(waitpid(NULL, NULL, WNOHANG) == 1);
+  //while(waitpid(NULL, NULL, WNOHANG) == 1);
   
   while(ptr != NULL) {
     ptr = ptr->next;
@@ -158,7 +158,7 @@ void execute_commands(COMMAND *commlist) {
     else {
       //parent code after fork
       if(!background_exec)
-	wait(NULL);
+	waitpid(pid, &status, WUNTRACED | WCONTINUED);
       if(i < npipes)
 	close(fd[i][1]);
     }
